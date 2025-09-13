@@ -3,7 +3,7 @@ name: CI/CD Static Website with ECR
 on:
   push:
     branches: [ "main" ]
-
+  workflow_dispatch:
 jobs:
   build-and-deploy:
     runs-on: self-hosted   # ✅ custom runner
