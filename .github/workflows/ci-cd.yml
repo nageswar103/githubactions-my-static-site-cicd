@@ -23,14 +23,14 @@ jobs:
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
           | docker login --username AWS --password-stdin ${{ secrets.ECR_REPO }}
 
-      - name: Build and Push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./static-site
-          push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
      
+      - name: Build, Tag, and Push Docker image
+        run: |
+          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          sudo docker build -t $IMAGE_URI ./static-site
+        
 
       - name: Push Docker image to ECR
-        run: docker push $IMAGE_URI
+        run: sudo docker push $IMAGE_URI
 
