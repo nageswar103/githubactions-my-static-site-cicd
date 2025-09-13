@@ -31,9 +31,9 @@ jobs:
         run: |
           IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${{ secrets.ECR_REPO }}:latest
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-          docker build -t $IMAGE_URI .
+          sudo docker build -t $IMAGE_URI .
         
 
       - name: Push Docker image to ECR
-        run:  docker push $IMAGE_URI
+        run:  sudo docker push $IMAGE_URI:latest
 
