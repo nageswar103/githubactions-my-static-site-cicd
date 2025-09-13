@@ -29,6 +29,14 @@ jobs:
           docker build -t $IMAGE_URI ./static-site
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./static-site
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
+     
+
       - name: Push Docker image to ECR
         run: docker push $IMAGE_URI
 
