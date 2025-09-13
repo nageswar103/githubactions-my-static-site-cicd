@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted  # self-hosted runner
+    runs-on: self-hosted  # ✅ custom runner
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -23,19 +23,21 @@ jobs:
         id: account
         run: echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
 
-      - name: Login to Amazon ECR
+      - name: Ensure ECR repository exists
         run: |
-          aws ecr get-login-password --region $AWS_REGION \
-          | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+          aws ecr describe-repositories --repository-names ${{ secrets.ECR_REPO }} --region ${{ secrets.AWS_REGION }} || \
+          aws ecr create-repository --repository-name ${{ secrets.ECR_REPO }} --region ${{ secrets.AWS_REGION }}
+
+      # ✅ Official ECR login
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set IMAGE_URI
         run: |
-          IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/${{ secrets.ECR_REPO }}:latest
-          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          echo "IMAGE_URI=$ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest" >> $GITHUB_ENV
 
       - name: Build Docker image
-        run:  sudo docker build -t $IMAGE_URI .
+        run: docker build -t $IMAGE_URI .
 
-      
-
-
+      - name: Push Docker image to ECR
+        run: docker push $IMAGE_URI
