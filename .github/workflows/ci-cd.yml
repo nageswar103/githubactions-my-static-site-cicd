@@ -35,5 +35,5 @@ jobs:
         
 
       - name: Push Docker image to ECR
-        run:  sudo docker push $IMAGE_URI
+        run:  sudo docker push $IMAGE_URI/static-website:latest
 
