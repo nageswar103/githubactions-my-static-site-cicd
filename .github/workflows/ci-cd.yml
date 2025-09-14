@@ -44,10 +44,10 @@ jobs:
           echo "Using image URI: $ECR_URI"
 
           # Build local image
-          docker build -t static-website .
+          sudo docker build -t static-website .
 
           # Tag for ECR
-          docker tag static-website:latest $ECR_URI
+          sudo docker tag static-website:latest $ECR_URI
 
           # Push to ECR
-          docker push $ECR_URI
+          sudo docker push $ECR_URI
