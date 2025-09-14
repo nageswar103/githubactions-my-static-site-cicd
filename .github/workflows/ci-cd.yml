@@ -27,12 +27,7 @@ jobs:
           aws ecr describe-repositories --repository-names ${{ secrets.ECR_REPO }} --region ${{ secrets.AWS_REGION }} || \
           aws ecr create-repository --repository-name ${{ secrets.ECR_REPO }} --region ${{ secrets.AWS_REGION }}
 
-      # ✅ Official ECR login
-      - name: Login to Amazon ECR (official action)
-        uses: aws-actions/amazon-ecr-login@v2
-
-      # ✅ Manual ECR login
-      - name: Login to Amazon ECR (manual)
+      - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
           | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
@@ -40,10 +35,10 @@ jobs:
       - name: Build, Tag, and Push Docker image
         run: |
           # Build local image
-          sudo docker build -t static-website .
+          docker build -t static-website .
 
           # Tag image for ECR
-          sudo docker tag static-website:latest $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
+          docker tag static-website:latest $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
 
           # Push image to ECR
-          sudo docker push $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
+          docker push $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
