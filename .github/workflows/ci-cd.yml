@@ -8,6 +8,10 @@ on:
 jobs:
   build-and-deploy:
     runs-on: self-hosted  # ✅ custom runner
+    env:   # ✅ make vars available to all steps
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REPO: ${{ secrets.ECR_REPO }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -20,25 +24,30 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Get AWS Account ID
-        run: echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "ACCOUNT_ID=$ACCOUNT_ID" >> $GITHUB_ENV
+          echo "ECR_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest" >> $GITHUB_ENV
 
       - name: Ensure ECR repository exists
         run: |
-          aws ecr describe-repositories --repository-names ${{ secrets.ECR_REPO }} --region ${{ secrets.AWS_REGION }} || \
-          aws ecr create-repository --repository-name ${{ secrets.ECR_REPO }} --region ${{ secrets.AWS_REGION }}
+          aws ecr describe-repositories --repository-names $ECR_REPO --region $AWS_REGION || \
+          aws ecr create-repository --repository-name $ECR_REPO --region $AWS_REGION
 
       - name: Login to Amazon ECR
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-          | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          aws ecr get-login-password --region $AWS_REGION \
+          | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
       - name: Build, Tag, and Push Docker image
         run: |
+          echo "Using image URI: $ECR_URI"
+
           # Build local image
-          sudo docker build -t static-website .
+          docker build -t static-website .
 
-          # Tag image for ECR
-          sudo docker tag static-website:latest $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
+          # Tag for ECR
+          docker tag static-website:latest $ECR_URI
 
-          # Push image to ECR
-          sudo docker push $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
+          # Push to ECR
+          docker push $ECR_URI
