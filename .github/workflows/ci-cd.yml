@@ -35,10 +35,10 @@ jobs:
       - name: Build, Tag, and Push Docker image
         run: |
           # Build local image
-          docker build -t static-website .
+          sudo docker build -t static-website .
 
           # Tag image for ECR
-          docker tag static-website:latest $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
+          sudo docker tag static-website:latest $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
 
           # Push image to ECR
-          docker push $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
+          sudo docker push $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
