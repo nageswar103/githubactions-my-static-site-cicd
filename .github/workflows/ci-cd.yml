@@ -20,7 +20,6 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Get AWS Account ID
-        id: account
         run: echo "ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
 
       - name: Ensure ECR repository exists
@@ -29,15 +28,22 @@ jobs:
           aws ecr create-repository --repository-name ${{ secrets.ECR_REPO }} --region ${{ secrets.AWS_REGION }}
 
       # ✅ Official ECR login
-      - name: Login to Amazon ECR
+      - name: Login to Amazon ECR (official action)
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Set IMAGE_URI
+      # ✅ Manual ECR login
+      - name: Login to Amazon ECR (manual)
         run: |
-          echo "IMAGE_URI=$ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest" >> $GITHUB_ENV
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+          | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-      - name: Build Docker image
-        run: sudo docker build -t $IMAGE_URI .
+      - name: Build, Tag, and Push Docker image
+        run: |
+          # Build local image
+          docker build -t static-website .
 
-      - name: Push Docker image to ECR
-        run: sudo docker push $IMAGE_URI
+          # Tag image for ECR
+          docker tag static-website:latest $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
+
+          # Push image to ECR
+          docker push $ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPO }}:latest
